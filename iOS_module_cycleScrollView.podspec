@@ -9,4 +9,5 @@ Pod::Spec.new do |s|
   s.source       = { :git => "https://github.com/halobear/iOS_module_cycleScrollView.git", :tag => "#{s.version}" }
   s.requires_arc = true
   s.source_files = "SDCycleScrollView/*.{h,m}"
+  s.dependency "SDWebImage"
 end
