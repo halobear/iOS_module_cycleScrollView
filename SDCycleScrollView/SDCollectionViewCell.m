@@ -101,7 +101,9 @@
 {
     [super layoutSubviews];
     //付野添加
-    self.originY = 0;
+    CGRect frame = self.frame;
+    frame.origin.y = 0;
+    self.frame = frame;
     
     if (self.onlyDisplayText) {
         _titleLabel.frame = self.bounds;
