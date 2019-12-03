@@ -34,7 +34,10 @@
 
 @interface SDCollectionViewCell : UICollectionViewCell
 
+@property (nonatomic, assign) BOOL isHome;
+
 @property (weak, nonatomic) UIImageView *imageView;
+//@property (weak, nonatomic) UIImageView *backView;
 @property (copy, nonatomic) NSString *title;
 
 @property (nonatomic, strong) UIColor *titleLabelTextColor;

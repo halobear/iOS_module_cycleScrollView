@@ -70,9 +70,6 @@ typedef enum {
 /** 如果你需要自定义cell样式，请在实现此代理方法返回你的自定义cell的class。 */
 - (Class)customCollectionViewCellClassForCycleScrollView:(SDCycleScrollView *)view;
 
-/** 如果你需要自定义cell样式，请在实现此代理方法返回你的自定义cell的Nib。 */
-- (UINib *)customCollectionViewCellNibForCycleScrollView:(SDCycleScrollView *)view;
-
 /** 如果你自定义了cell样式，请在实现此代理方法为你的cell填充数据以及其它一系列设置 */
 - (void)setupCustomCell:(UICollectionViewCell *)cell forIndex:(NSInteger)index cycleScrollView:(SDCycleScrollView *)view;
 
@@ -80,6 +77,7 @@ typedef enum {
 
 @interface SDCycleScrollView : UIView
 
+@property (nonatomic, assign) BOOL isHome;
 
 /** 初始轮播图（推荐使用） */
 + (instancetype)cycleScrollViewWithFrame:(CGRect)frame delegate:(id<SDCycleScrollViewDelegate>)delegate placeholderImage:(UIImage *)placeholderImage;
@@ -105,8 +103,7 @@ typedef enum {
 /** 本地图片数组 */
 @property (nonatomic, strong) NSArray *localizationImageNamesGroup;
 
-
-
+@property (nonatomic, assign) BOOL isHidden_pageContolBg;
 
 
 //////////////////////  滚动控制API //////////////////////
@@ -130,9 +127,6 @@ typedef enum {
 
 /** block方式监听滚动 */
 @property (nonatomic, copy) void (^itemDidScrollOperationBlock)(NSInteger currentIndex);
-
-/** 可以调用此方法手动控制滚动到哪一个index */
-- (void)makeScrollViewScrollToIndex:(NSInteger)index;
 
 /** 解决viewWillAppear时出现时轮播图卡在一半的问题，在控制器viewWillAppear时调用此方法 */
 - (void)adjustWhenControllerViewWillAppera;

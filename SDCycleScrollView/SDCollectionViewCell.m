@@ -72,6 +72,11 @@
     UIImageView *imageView = [[UIImageView alloc] init];
     _imageView = imageView;
     [self.contentView addSubview:imageView];
+    
+//    UIImageView *backView = [[UIImageView alloc]initWithImage:ImageNamed(@"home_topshade")];
+//    _backView = backView;
+//    [self.contentView addSubview:backView];
+    
 }
 
 - (void)setupTitleLabel
@@ -100,10 +105,9 @@
 - (void)layoutSubviews
 {
     [super layoutSubviews];
-    //付野添加
-    CGRect frame = self.frame;
-    frame.origin.y = 0;
-    self.frame = frame;
+      CGRect frame = self.frame;
+      frame.origin.y = 0;
+      self.frame = frame;
     
     if (self.onlyDisplayText) {
         _titleLabel.frame = self.bounds;
