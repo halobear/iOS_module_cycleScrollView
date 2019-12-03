@@ -93,6 +93,7 @@ NSString * const ID = @"SDCycleScrollViewCell";
     _currentPageDotColor = [[UIColor lightGrayColor] colorWithAlphaComponent:0.3];
     _pageDotColor = [UIColor lightGrayColor];
     _bannerImageViewContentMode = UIViewContentModeScaleToFill;
+    _isHidden_pageContolBg = YES;
     
     self.backgroundColor = [UIColor whiteColor];
     
@@ -540,7 +541,7 @@ NSString * const ID = @"SDCycleScrollViewCell";
     self.pageControl.frame = pageControlFrame;
     self.pageControl.hidden = !_showPageControl;
     CGFloat width = self.imagePathsGroup.count*self.pageControlDotSize.width + (self.imagePathsGroup.count-1)*10+18;
-    self.pageControlBgView.frame = CGRectMake(self.width/2-width/2, pageControlFrame.origin.y-3.5, width, pageControlFrame.size.height+7);
+    self.pageControlBgView.frame = CGRectMake(self.frame.size.width/2-width/2, pageControlFrame.origin.y-3.5, width, pageControlFrame.size.height+7);
     self.pageControlBgView.hidden = _isHidden_pageContolBg ? YES : !_showPageControl;
 
     if (self.backgroundImageView) {
@@ -598,8 +599,7 @@ NSString * const ID = @"SDCycleScrollViewCell";
     
     if (!self.onlyDisplayText && [imagePath isKindOfClass:[NSString class]]) {
         if ([imagePath hasPrefix:@"http"]) {
-            [cell.imageView setProgressImageURL:[NSURL URLWithString:imagePath] WithPlaceholder:self.placeholderImage options:YYWebImageOptionSetImageWithFadeAnimation| YYWebImageOptionProgressiveBlur | YYWebImageOptionShowNetworkActivity completed:^(UIImage *image, NSURL *url, YYWebImageFromType from, YYWebImageStage stage, NSError *error) {
-            }];
+           [cell.imageView sd_setImageWithURL:[NSURL URLWithString:imagePath] placeholderImage:self.placeholderImage];
         } else {
             UIImage *image = [UIImage imageNamed:imagePath];
             if (!image) {
