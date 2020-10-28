@@ -35,7 +35,6 @@
 #import "TAPageControl.h"
 #import "SDWebImageManager.h"
 #import "UIImageView+WebCache.h"
-#import "SDImageCache.h"
 
 #define kCycleScrollViewInitialPageControlDotSize CGSizeMake(10, 10)
 
@@ -50,8 +49,8 @@ NSString * const ID = @"SDCycleScrollViewCell";
 @property (nonatomic, weak) NSTimer *timer;
 @property (nonatomic, assign) NSInteger totalItemsCount;
 @property (nonatomic, weak) UIControl *pageControl;
+
 @property (nonatomic, strong) UIImageView *backgroundImageView; // 当imageURLs为空时的背景图
-@property (nonatomic, strong) UIView *pageControlBgView;
 
 @end
 
@@ -76,7 +75,7 @@ NSString * const ID = @"SDCycleScrollViewCell";
 - (void)initialization
 {
     _pageControlAliment = SDCycleScrollViewPageContolAlimentCenter;
-    _autoScrollTimeInterval = 3.0;
+    _autoScrollTimeInterval = 2.0;
     _titleLabelTextColor = [UIColor whiteColor];
     _titleLabelTextFont= [UIFont systemFontOfSize:14];
     _titleLabelBackgroundColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:0.5];
@@ -90,12 +89,11 @@ NSString * const ID = @"SDCycleScrollViewCell";
     _pageControlRightOffset = 0;
     _pageControlStyle = SDCycleScrollViewPageContolStyleClassic;
     _hidesForSinglePage = YES;
-    _currentPageDotColor = [[UIColor lightGrayColor] colorWithAlphaComponent:0.3];
+    _currentPageDotColor = [UIColor whiteColor];
     _pageDotColor = [UIColor lightGrayColor];
     _bannerImageViewContentMode = UIViewContentModeScaleToFill;
-    _isHidden_pageContolBg = YES;
     
-    self.backgroundColor = [UIColor whiteColor];
+    self.backgroundColor = [UIColor lightGrayColor];
     
 }
 
@@ -161,6 +159,8 @@ NSString * const ID = @"SDCycleScrollViewCell";
     
     if ([self.delegate respondsToSelector:@selector(customCollectionViewCellClassForCycleScrollView:)] && [self.delegate customCollectionViewCellClassForCycleScrollView:self]) {
         [self.mainView registerClass:[self.delegate customCollectionViewCellClassForCycleScrollView:self] forCellWithReuseIdentifier:ID];
+    }else if ([self.delegate respondsToSelector:@selector(customCollectionViewCellNibForCycleScrollView:)] && [self.delegate customCollectionViewCellNibForCycleScrollView:self]) {
+        [self.mainView registerNib:[self.delegate customCollectionViewCellNibForCycleScrollView:self] forCellWithReuseIdentifier:ID];
     }
 }
 
@@ -175,7 +175,7 @@ NSString * const ID = @"SDCycleScrollViewCell";
         self.backgroundImageView = bgImageView;
     }
     
-//    self.backgroundImageView.image = placeholderImage;
+    self.backgroundImageView.image = placeholderImage;
 }
 
 - (void)setPageControlDotSize:(CGSize)pageControlDotSize
@@ -193,7 +193,6 @@ NSString * const ID = @"SDCycleScrollViewCell";
     _showPageControl = showPageControl;
     
     _pageControl.hidden = !showPageControl;
-    _pageControlBgView.hidden = _isHidden_pageContolBg ? YES : !showPageControl;
 }
 
 - (void)setCurrentPageDotColor:(UIColor *)currentPageDotColor
@@ -308,7 +307,7 @@ NSString * const ID = @"SDCycleScrollViewCell";
         [self setAutoScroll:self.autoScroll];
     } else {
         self.mainView.scrollEnabled = NO;
-        [self setAutoScroll:NO];
+        [self invalidateTimer];
     }
     
     [self setupPageControl];
@@ -317,9 +316,7 @@ NSString * const ID = @"SDCycleScrollViewCell";
 
 - (void)setImageURLStringsGroup:(NSArray *)imageURLStringsGroup
 {
-    if (_imageURLStringsGroup != imageURLStringsGroup) {
-        _imageURLStringsGroup = imageURLStringsGroup;
-    }
+    _imageURLStringsGroup = imageURLStringsGroup;
     
     NSMutableArray *temp = [NSMutableArray new];
     [_imageURLStringsGroup enumerateObjectsUsingBlock:^(NSString * obj, NSUInteger idx, BOOL * stop) {
@@ -413,17 +410,8 @@ NSString * const ID = @"SDCycleScrollViewCell";
             pageControl.pageIndicatorTintColor = self.pageDotColor;
             pageControl.userInteractionEnabled = NO;
             pageControl.currentPage = indexOnPageControl;
-            _pageControl = pageControl;
-            
-            if (_pageControlBgView == nil) {
-                _pageControlBgView = [[UIView alloc]init];
-                _pageControlBgView.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.1];
-                _pageControlBgView.layer.cornerRadius = 6;
-                [self addSubview:_pageControlBgView];
-            }
-            
             [self addSubview:pageControl];
-
+            _pageControl = pageControl;
         }
             break;
             
@@ -489,8 +477,7 @@ NSString * const ID = @"SDCycleScrollViewCell";
 
 + (void)clearImagesCache
 {
-//    [[[SDWebImageManager sharedManager] imageCache] clearDiskOnCompletion:nil];
-    [SDImageCache.sharedImageCache clearDiskOnCompletion:nil];
+    [[[SDWebImageManager sharedManager] imageCache] clearWithCacheType:SDImageCacheTypeDisk completion:nil];
 }
 
 #pragma mark - life circles
@@ -513,17 +500,26 @@ NSString * const ID = @"SDCycleScrollViewCell";
         }
         [_mainView scrollToItemAtIndexPath:[NSIndexPath indexPathForItem:targetIndex inSection:0] atScrollPosition:UICollectionViewScrollPositionNone animated:NO];
     }
-    
+    /*需要添加的代码 start */
     CGSize size = CGSizeZero;
-    if ([self.pageControl isKindOfClass:[TAPageControl class]]) {
-        TAPageControl *pageControl = (TAPageControl *)_pageControl;
-        if (!(self.pageDotImage && self.currentPageDotImage && CGSizeEqualToSize(kCycleScrollViewInitialPageControlDotSize, self.pageControlDotSize))) {
-            pageControl.dotSize = self.pageControlDotSize;
-        }
-        size = [pageControl sizeForNumberOfPages:self.imagePathsGroup.count];
-    } else {
-        size = CGSizeMake(self.imagePathsGroup.count * self.pageControlDotSize.width * 1.5, self.pageControlDotSize.height);
-    }
+      if ([self.pageControl isKindOfClass:[TAPageControl class]]) {
+          TAPageControl *pageControl = (TAPageControl *)_pageControl;
+          if (!(self.pageDotImage && self.currentPageDotImage && CGSizeEqualToSize(kCycleScrollViewInitialPageControlDotSize, self.pageControlDotSize))) {
+              pageControl.dotSize = self.pageControlDotSize;
+          }
+          size = [pageControl sizeForNumberOfPages:self.imagePathsGroup.count];
+      } else {
+          size = CGSizeMake(self.imagePathsGroup.count * self.pageControlDotSize.width * 1.5, self.pageControlDotSize.height);
+          
+          // add code
+          if (@available(iOS 14.0, *)) {
+              if ([self.pageControl isKindOfClass:[UIPageControl class]]) {
+                  UIPageControl *pageControl = (UIPageControl *)_pageControl;
+                  size.width = [pageControl sizeForNumberOfPages:self.imagePathsGroup.count].width;
+              }
+          }
+      }
+    /*需要添加的代码 end*/
     CGFloat x = (self.sd_width - size.width) * 0.5;
     if (self.pageControlAliment == SDCycleScrollViewPageContolAlimentRight) {
         x = self.mainView.sd_width - size.width - 10;
@@ -540,10 +536,7 @@ NSString * const ID = @"SDCycleScrollViewCell";
     pageControlFrame.origin.x -= self.pageControlRightOffset;
     self.pageControl.frame = pageControlFrame;
     self.pageControl.hidden = !_showPageControl;
-    CGFloat width = self.imagePathsGroup.count*self.pageControlDotSize.width + (self.imagePathsGroup.count-1)*10+18;
-    self.pageControlBgView.frame = CGRectMake(self.frame.size.width/2-width/2, pageControlFrame.origin.y-3.5, width, pageControlFrame.size.height+7);
-    self.pageControlBgView.hidden = _isHidden_pageContolBg ? YES : !_showPageControl;
-
+    
     if (self.backgroundImageView) {
         self.backgroundImageView.frame = self.bounds;
     }
@@ -585,12 +578,15 @@ NSString * const ID = @"SDCycleScrollViewCell";
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath
 {
     SDCollectionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:ID forIndexPath:indexPath];
-    cell.isHome =  _isHome;
+    
     long itemIndex = [self pageControlIndexWithCurrentCellIndex:indexPath.item];
     
     if ([self.delegate respondsToSelector:@selector(setupCustomCell:forIndex:cycleScrollView:)] &&
-        [self.delegate respondsToSelector:@selector(customCollectionViewCellClassForCycleScrollView:)] &&
-        [self.delegate customCollectionViewCellClassForCycleScrollView:self]) {
+        [self.delegate respondsToSelector:@selector(customCollectionViewCellClassForCycleScrollView:)] && [self.delegate customCollectionViewCellClassForCycleScrollView:self]) {
+        [self.delegate setupCustomCell:cell forIndex:itemIndex cycleScrollView:self];
+        return cell;
+    }else if ([self.delegate respondsToSelector:@selector(setupCustomCell:forIndex:cycleScrollView:)] &&
+              [self.delegate respondsToSelector:@selector(customCollectionViewCellNibForCycleScrollView:)] && [self.delegate customCollectionViewCellNibForCycleScrollView:self]) {
         [self.delegate setupCustomCell:cell forIndex:itemIndex cycleScrollView:self];
         return cell;
     }
@@ -599,21 +595,16 @@ NSString * const ID = @"SDCycleScrollViewCell";
     
     if (!self.onlyDisplayText && [imagePath isKindOfClass:[NSString class]]) {
         if ([imagePath hasPrefix:@"http"]) {
-           [cell.imageView sd_setImageWithURL:[NSURL URLWithString:imagePath] placeholderImage:self.placeholderImage];
+            [cell.imageView sd_setImageWithURL:[NSURL URLWithString:imagePath] placeholderImage:self.placeholderImage];
         } else {
             UIImage *image = [UIImage imageNamed:imagePath];
             if (!image) {
-                [UIImage imageWithContentsOfFile:imagePath];
+                image = [UIImage imageWithContentsOfFile:imagePath];
             }
             cell.imageView.image = image;
         }
     } else if (!self.onlyDisplayText && [imagePath isKindOfClass:[UIImage class]]) {
         cell.imageView.image = (UIImage *)imagePath;
-    }
-    
-    if (_isHome) {
-        cell.imageView.layer.cornerRadius = 5;
-        cell.imageView.layer.masksToBounds = true;
     }
     
     if (_titlesGroup.count && itemIndex < _titlesGroup.count) {
@@ -695,5 +686,17 @@ NSString * const ID = @"SDCycleScrollViewCell";
     }
 }
 
+- (void)makeScrollViewScrollToIndex:(NSInteger)index{
+    if (self.autoScroll) {
+        [self invalidateTimer];
+    }
+    if (0 == _totalItemsCount) return;
+    
+    [self scrollToIndex:(int)(_totalItemsCount * 0.5 + index)];
+    
+    if (self.autoScroll) {
+        [self setupTimer];
+    }
+}
 
 @end
